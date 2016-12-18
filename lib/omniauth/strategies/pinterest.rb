@@ -66,10 +66,7 @@ module OmniAuth
 
       def build_access_token
         verifier = request.params['code']
-        client.auth_code.get_token(
-          verifier,
-          auth_token_params,
-        )
+        client.auth_code.get_token(verifier, auth_token_params)
       end
 
       def auth_token_params
@@ -94,11 +91,8 @@ module OmniAuth
       #   &state=YOUR_OPTIONAL_STRING
       def request_phase
         options[:response_type] ||= 'code'
-
-        # @todo set state here, and then verify it matches in the #callback_phase
-        # options[:state] = SecureRandom.hex(10)
-        # options[:provider_ignores_state] = true
         options[:client_id] = options[:consumer_id]
+
         url = client.auth_code.authorize_url({
           redirect_uri: callback_url,
           consumer_id: options[:consumer_id]
@@ -119,11 +113,11 @@ module OmniAuth
               request.params['error_uri']
             )
           )
-        # elsif !options.provider_ignores_state && (
-        #   request.params['state'].to_s.empty? ||
-        #   request.params['state'] != session.delete('omniauth.state')
-        # )
-        #   fail!(:csrf_detected, CallbackError.new(:csrf_detected, 'CSRF detected'))
+        elsif !options.provider_ignores_state && (
+          request.params['state'].to_s.empty? ||
+          request.params['state'] != session.delete('omniauth.state')
+        )
+          fail!(:csrf_detected, CallbackError.new(:csrf_detected, 'CSRF detected'))
         else
           self.access_token = build_access_token
           if !access_token.expires_at.zero? && access_token.expired?
